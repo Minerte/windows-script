@@ -3,7 +3,8 @@ import requests
 import tkinter as tk
 import zipfile
 from tkinter import filedialog
-from zipfile import ZipFile
+import subprocess
+import platform
 
 def list_options(options, prompt):
     """Helper funtion to display list of options"""
@@ -19,6 +20,47 @@ def list_options(options, prompt):
                 print("Invalid choice, please try again.")
         except ValueError:
             print("Please enter a valid number.")
+
+def default_launcher(forge_url, launcher, destination):
+    """Fetch and execute the Forge installer for Minecraft."""
+    url = forge_url if launcher == "MinecraftDefault" else None
+    if not url:
+        print("Invalid launcher specified. Exiting.")
+        return
+    
+    # Ensure the destination directory exists
+    os.makedirs(destination, exist_ok=True)
+
+    try:
+        print(f"Downloading Forge installer from {url}...")
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        filepath = os.path.join(destination, "forge_installer.jar")
+        with open(filepath, 'wb') as file:
+            for chunk in response.iter_content(chunk_size=8192):
+                file.write(chunk)
+        print(f"Forge installer has been downloaded to {filepath}")
+
+        # Execute the Forge installer
+        print("Executing Forge installer...")
+        if platform.system() == "Windows":
+            # On Windows, use java -jar or directly invoke the .jar if Java is associated
+            result = subprocess.run(["java", "-jar", filepath], check=True)
+        else:
+            # For non-Windows systems
+            result = subprocess.run(["java", "-jar", filepath], check=True)
+        
+        if result.returncode == 0:
+            print("Forge installer executed successfully!")
+        else:
+            print("Forge installer execution failed.")
+
+    except requests.RequestException as e:
+        print(f"Failed to download Forge installer from {url} to {destination}: {e}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error while executing Forge installer: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 def download_modpack(server_url, modpack, destination):
     """Fetch the modpack zip file from the Apache2 server."""
@@ -92,27 +134,44 @@ def main():
     # Configuration
     modpacks = ["Fabric-0.16.0-1.20.1", "Forge-47.3.0-1.20.1"]
     launchers = ["MinecraftDefault", "PrismLauncher"]
-    server_url = "http://192.168.1.215:8080"  # Change this to your Apache2 server's URL
+    server_url = "http://september-scale.gl.at.ply.gg:20767"
+    forge_url = "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.3.0/forge-1.20.1-47.3.0-installer.jar"
 
     print("Welcome to the Minecraft Modpack Downloader!")
-
-    # User selects a modpack
-    selected_modpack = list_options(modpacks, "Choose a modpack to download:")
 
     # User selects a launcher
     selected_launcher = list_options(launchers, "Choose a launcher:")
 
-    # Determine the destination directory based on the launcher
+    # Determine the destination directory
     destination = choose_directory()
 
     # Ensure the directory exists
     os.makedirs(destination, exist_ok=True)
 
-    # Download the modpack
-    download_modpack(server_url, selected_modpack, destination)
+    # Download and execute the Forge installer if required
+    if selected_launcher == "MinecraftDefault":
+        default_launcher(forge_url, selected_launcher, destination)
 
-    # Extract file
-    choose_zip_and_extract()
+    # User selects a modpack
+    selected_modpack = list_options(modpacks, "Choose a modpack to download:")
+
+    # Download and extract the modpack
+    download_modpack(server_url, selected_modpack, destination)
+    print("Downloading completed. Extracting files...")
+    
+    # Automatically extract the downloaded modpack ZIP
+    modpack_zip = os.path.join(destination, f"{selected_modpack}.zip")
+    if os.path.exists(modpack_zip):
+        try:
+            with zipfile.ZipFile(modpack_zip, 'r') as zip_ref:
+                zip_ref.extractall(os.path.join(destination, "mods"))
+            print(f"Modpack extracted to {os.path.join(destination, 'mods')}")
+            os.remove(modpack_zip)
+            print(f"Deleted downloaded ZIP file: {modpack_zip}")
+        except zipfile.BadZipFile:
+            print("The downloaded ZIP file is invalid. Please try again.")
+    else:
+        print("Modpack ZIP file not found. Extraction skipped.")
 
 if __name__ == "__main__":
     main()
