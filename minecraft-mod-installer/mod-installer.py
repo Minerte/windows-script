@@ -14,8 +14,8 @@ FABRIC_INSTALLER_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-installer
 
 # Modpack download links
 MODPACKS = {
-    "Forge-47.3.0-1.20.1": "http://192.168.1.215:8080/Forge-47.3.0-1.20.1/Forge.zip",
-    "Fabric-0.16.0-1.20.1": "http://192.168.1.215:8080/Fabric-0.16.0-1.20.1/Fabric.zip",
+    "Forge-47.3.0-1.20.1": "URL TO MODPACK",
+    "Fabric-0.16.0-1.20.1": "URL TO MODPACK",
 }
 
 def list_options(options, prompt):
