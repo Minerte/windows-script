@@ -1,10 +1,8 @@
 import os
+import shutil
 import requests
-import tkinter as tk
 import zipfile
 import subprocess
-import json
-from tkinter import filedialog
 from pathlib import Path
 
 FORGE_VERSION = "47.3.0"
@@ -14,8 +12,8 @@ FABRIC_INSTALLER_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-installer
 
 # Modpack download links
 MODPACKS = {
-    "Forge-47.3.0-1.20.1": "URL TO MODPACK",
-    "Fabric-0.16.0-1.20.1": "URL TO MODPACK",
+    "Forge-47.3.0-1.20.1": "http://completed-dental.gl.at.ply.gg:61434/minecraft/Forge-47.3.0-1.20.1/Forge.zip",
+    "Fabric-0.16.0-1.20.1": "URL",
 }
 
 def list_options(options, prompt):
@@ -119,6 +117,34 @@ def choose_modpack(destination):
     print(f"Modpack extracted to {os.path.join(destination, 'mods')}")
     os.remove(zip_path)
 
+def move_config_folder(mods_dir, appdata_path, is_prism_launcher, instance_name=None):
+    """Move the config folder from mods to the correct directory."""
+    config_folder_in_mods = os.path.join(mods_dir, "config")
+
+    if os.path.exists(config_folder_in_mods):
+        # Ask the user if they want to move the config folder
+        choice = input(f"A 'config' folder exists in the '{mods_dir}' folder. Do you want to move it to the correct directory? (yes/no): ").lower()
+        if choice == "yes":
+            # Determine the destination of the config folder
+            if is_prism_launcher:
+                config_folder = os.path.join(appdata_path, "PrismLauncher", "instances", instance_name, "minecraft", "config")
+            else:
+                config_folder = os.path.join(appdata_path, ".minecraft", "config")
+
+            # Remove the existing config folder in the destination if necessary
+            if os.path.exists(config_folder):
+                print(f"Removing existing config folder from {config_folder}")
+                shutil.rmtree(config_folder)
+
+            # Move the config folder from mods to the target directory
+            print(f"Moving config folder to {config_folder}")
+            shutil.move(config_folder_in_mods, config_folder)
+            print(f"Config folder moved successfully.")
+        else:
+            print("Config folder move skipped.")
+    else:
+        print("No config folder found in mods.")
+
 def setup_prism_launcher():
     """Handle PrismLauncher setup."""
     appdata_path = os.getenv("APPDATA")
@@ -138,6 +164,9 @@ def setup_prism_launcher():
         os.makedirs(mods_dir, exist_ok=True)
         print(f"Mods will be installed to: {mods_dir}")
         choose_modpack(destination)
+
+    # Move the config folder from mods to the appropriate place
+    move_config_folder(mods_dir, appdata_path, is_prism_launcher=True, instance_name=selected_instance)
 
 def setup_minecraft_default():
     """Handle Minecraft default setup."""
@@ -162,8 +191,13 @@ def setup_minecraft_default():
         print(f"Mods will be installed to: {mods_dir}")
         choose_modpack(minecraft_path)
 
+    # Move the config folder from mods to the appropriate place
+    move_config_folder(mods_dir, appdata_path, is_prism_launcher=False)
+
 def main():
     print("Welcome to the Minecraft Modpack Installer!")
+    print("Please be ware that the mods folder and config folder will be replaced")
+    print("If you want to backup, you need to do it manually!")
     launchers = ["MinecraftDefault", "PrismLauncher"]
     choice = list_options(launchers, "Choose your launcher:")
     
