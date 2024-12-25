@@ -12,7 +12,7 @@ FABRIC_INSTALLER_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-installer
 
 # Modpack download links
 MODPACKS = {
-    "Forge-47.3.0-1.20.1": "http://completed-dental.gl.at.ply.gg:61434/minecraft/Forge-47.3.0-1.20.1/Forge.zip",
+    "Forge-47.3.0-1.20.1": "URL",
     "Fabric-0.16.0-1.20.1": "URL",
 }
 
